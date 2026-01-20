@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusPro | Big Timer</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --sidebar-bg: #111111;
+            --accent-pomo: #ff4d4d;
+            --accent-short: #4dff88;
+            --accent-long: #4da6ff;
+            --text-main: #ffffff;
+            --sidebar-width: 250px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 3-Line Menu Icon */
+        .menu-toggle {
+            position: fixed;
+            top: 25px;
+            left: 25px;
+            z-index: 100;
+            cursor: pointer;
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .line {
+            width: 25px;
+            height: 3px;
+            background-color: white;
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: calc(-1 * var(--sidebar-width));
+            top: 0;
+            width: var(--sidebar-width);
+            height: 100%;
+            background: var(--sidebar-bg);
+            border-right: 1px solid #222;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 90;
+            padding-top: 80px;
+        }
+
+        .sidebar.open { left: 0; }
+
+        .nav-item {
+            padding: 20px 30px;
+            font-size: 1.1rem;
+            color: #888;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: white;
+            background: #1a1a1a;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            transition: filter 0.3s;
+        }
+
+        .sidebar.open ~ .main-content { filter: brightness(0.4); }
+
+        .view { display: none; text-align: center; }
+        .view.active { display: block; }
+
+        .timer-display {
+            font-size: clamp(5rem, 20vw, 15rem);
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        /* Break Selection Buttons */
+        .break-options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .break-btn {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #aaa;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .break-btn:hover { color: white; border-color: #555; }
+        .break-btn.active { background: white; color: black; border-color: white; }
+
+        /* UI Elements */
+        .controls { display: flex; gap: 15px; justify-content: center; }
+        .btn {
+            background: white; border: none; padding: 15px 45px;
+            font-size: 1.2rem; font-weight: bold; border-radius: 10px; cursor: pointer;
+        }
+        .btn-sec { background: transparent; color: #555; border: 1px solid #333; padding: 15px 25px; border-radius: 10px; cursor: pointer;}
+        
+        input {
+            background: #111; border: 1px solid #333; color: white;
+            padding: 12px; width: 80px; border-radius: 8px; text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()">
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line"></div>
+    </button>
+
+    <div class="sidebar" id="sidebar">
+        <div class="nav-item active" onclick="switchView('pomo-view', this)">
+            <span>⏳</span> Pomodoro
+        </div>
+        <div class="nav-item" onclick="switchView('sw-view', this)">
+            <span>⏱️</span> Stopwatch
+        </div>
+    </div>
+
+    <div class="main-content" onclick="closeSidebar()">
+        
+        <div id="pomo-view" class="view active">
+            <div class="break-options">
+                <button class="break-btn active" id="btn-work" onclick="setPomoMode(25, 'work')">Focus</button>
+                <button class="break-btn" id="btn-short" onclick="setPomoMode(5, 'short')">Short Break</button>
+                <button class="break-btn" id="btn-long" onclick="setPomoMode(15, 'long')">Long Break</button>
+            </div>
+
+            <div class="timer-display" id="pomo-display" style="color: var(--accent-pomo);">25:00</div>
+            
+            <div class="controls">
+                <button class="btn-sec" onclick="resetPomo()">Reset</button>
+                <button class="btn" id="pomoStartBtn" onclick="togglePomo()">START</button>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <input type="number" id="pomoInput" placeholder="Min">
+                <button class="btn-sec" style="padding: 10px 15px;" onclick="setCustomPomo()">Set Custom</button>
+            </div>
+        </div>
+
+        <div id="sw-view" class="view">
+            <div class="timer-display" id="sw-display" style="color: var(--accent-sw);">00:00.00</div>
+            <div class="controls">
+                <button class="btn-sec" onclick="resetSW()">Reset</button>
+                <button class="btn" id="swStartBtn" onclick="toggleSW()">START</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Sidebar Controls
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); }
+
+        function switchView(viewId, el) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            el.classList.add('active');
+            closeSidebar();
+        }
+
+        // --- Pomodoro Logic ---
+        let pomoTime = 1500;
+        let pomoInt;
+        let currentPomoMode = 'work';
+
+        function setPomoMode(mins, mode) {
+            resetPomo();
+            pomoTime = mins * 60;
+            currentPomoMode = mode;
+            
+            // UI Updates
+            const disp = document.getElementById('pomo-display');
+            document.querySelectorAll('.break-btn').forEach(b => b.classList.remove('active'));
+            
+            if(mode === 'work') {
+                disp.style.color = 'var(--accent-pomo)';
+                document.getElementById('btn-work').classList.add('active');
+            } else if(mode === 'short') {
+                disp.style.color = 'var(--accent-short)';
+                document.getElementById('btn-short').classList.add('active');
+            } else {
+                disp.style.color = 'var(--accent-long)';
+                document.getElementById('btn-long').classList.add('active');
+            }
+            updatePomoDisp();
+        }
+
+        function updatePomoDisp() {
+            const m = Math.floor(pomoTime / 60).toString().padStart(2, '0');
+            const s = (pomoTime % 60).toString().padStart(2, '0');
+            document.getElementById('pomo-display').innerText = `${m}:${s}`;
+        }
+
+        function togglePomo() {
+            const btn = document.getElementById('pomoStartBtn');
+            if (pomoInt) {
+                clearInterval(pomoInt); pomoInt = null;
+                btn.innerText = "START";
+            } else {
+                btn.innerText = "STOP";
+                pomoInt = setInterval(() => {
+                    if (pomoTime > 0) { pomoTime--; updatePomoDisp(); }
+                    else { clearInterval(pomoInt); alert("Session complete!"); }
+                }, 1000);
+            }
+        }
+
+        function setCustomPomo() {
+            const val = document.getElementById('pomoInput').value;
+            if(val > 0) { pomoTime = val * 60; updatePomoDisp(); }
+        }
+
+        function resetPomo() { 
+            clearInterval(pomoInt); pomoInt = null; 
+            document.getElementById('pomoStartBtn').innerText = "START";
+            updatePomoDisp();
+        }
+
+        // --- Stopwatch Logic ---
+        let swTime = 0, swInt, swStart;
+        function updateSWDisp() {
+            const totalS = Math.floor(swTime / 1000);
+            const m = Math.floor(totalS / 60).toString().padStart(2, '0');
+            const s = (totalS % 60).toString().padStart(2, '0');
+            const ms = Math.floor((swTime % 1000) / 10).toString().padStart(2, '0');
+            document.getElementById('sw-display').innerText = `${m}:${s}.${ms}`;
+        }
+        function toggleSW() {
+            const btn = document.getElementById('swStartBtn');
+            if (swInt) {
+                clearInterval(swInt); swInt = null; btn.innerText = "START";
+            } else {
+                btn.innerText = "STOP";
+                swStart = Date.now() - swTime;
+                swInt = setInterval(() => { swTime = Date.now() - swStart; updateSWDisp(); }, 10);
+            }
+        }
+        function resetSW() {
+            clearInterval(swInt); swInt = null; swTime = 0;
+            updateSWDisp(); document.getElementById('swStartBtn').innerText = "START";
+        }
+    </script>
+</body>
+</html>
